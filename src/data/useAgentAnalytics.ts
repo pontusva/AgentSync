@@ -8,6 +8,7 @@ interface PlayerPerformance {
   deaths: number
   assists: number
   score: number
+  kda: number
   utilityUsage: {
     grenadeCasts: number
     ability1Casts: number
@@ -19,7 +20,7 @@ interface PlayerPerformance {
 interface AgentRecommendation {
   agentId: string
   confidence: number
-  reasons: string[]
+  reasons: PerformanceReason[]
 }
 
 interface PerformanceReason {
@@ -28,7 +29,7 @@ interface PerformanceReason {
 }
 
 // Move agent roles to a separate constant at the top level
-export const AGENT_ROLES = {
+export const AGENT_ROLES: { [key: string]: string } = {
   // Duelists
   'add6443a-41bd-e414-f6ad-e58d267f4e95': 'Duelist', // Jett
   'bb2a4828-46eb-8cd1-e765-15848195d751': 'Duelist', // Neon
@@ -109,7 +110,10 @@ const useAgentAnalytics = (matchData: any) => {
       Math.max(1, player.stats.deaths)
     const utilityImpact = Object.values(
       player.stats.abilityCasts
-    ).reduce((sum: number, casts: number) => sum + casts, 0)
+    ).reduce(
+      (sum: number, casts: number) => sum + casts,
+      0
+    ) as number
     const scoreImpact = player.stats.score / 1000 // Normalize score
 
     return (
@@ -262,7 +266,8 @@ const useAgentAnalytics = (matchData: any) => {
   return {
     topPerformers,
     recommendations: recommendations.map((rec) => ({
-      ...rec,
+      agentId: rec.agentId,
+      confidence: rec.confidence,
       reasons: rec.reasons.map((reason) => reason.text)
     })),
     getAgentRecommendationForMap: (mapId: string) =>
@@ -276,7 +281,8 @@ const useAgentAnalytics = (matchData: any) => {
             ).length > 0
         )
         .map((rec) => ({
-          ...rec,
+          agentId: rec.agentId,
+          confidence: rec.confidence,
           reasons: rec.reasons.map((reason) => reason.text)
         }))
   }
