@@ -29,6 +29,8 @@ export class ErrorBoundary extends Component<Props, State> {
         componentStack: errorInfo.componentStack,
       },
     });
+
+    logtail.flush();
   }
 
   public render() {
