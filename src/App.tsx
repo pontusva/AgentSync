@@ -17,6 +17,18 @@ function App() {
     type: "test_error_2",
   });
   logtail.flush();
+  // Test the connection
+  logtail
+    .info("Logtail initialized", {
+      dt: new Date().toISOString(),
+      source: "init",
+    })
+    .then(() => {
+      console.log("Successfully connected to BetterStack");
+    })
+    .catch((error) => {
+      console.error("Failed to connect to BetterStack:", error);
+    });
   return (
     <ErrorBoundary>
       <div className="container">

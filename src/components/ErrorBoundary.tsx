@@ -33,21 +33,28 @@ export class ErrorBoundary extends Component<Props, State> {
       },
     };
 
-    // Always log to console as fallback
-    console.error("[ErrorBoundary] Error caught:", logPayload);
-
     try {
       // Try to send to BetterStack with timeout
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Logging timeout")), 5000);
       });
 
+      // First, try to send the error
       await Promise.race([
-        logtail.error("REACT_ERROR_BOUNDARY", logPayload),
+        logtail.error("REACT_COMPONENT_ERROR", logPayload),
         timeoutPromise,
       ]);
 
-      await Promise.race([logtail.flush(), timeoutPromise]);
+      // Then, ensure it's flushed immediately
+      await Promise.race([
+        new Promise((resolve) => {
+          logtail.flush().then(() => {
+            console.log("[ErrorBoundary] Successfully flushed to BetterStack");
+            resolve(true);
+          });
+        }),
+        timeoutPromise,
+      ]);
 
       console.log("[ErrorBoundary] Successfully sent error to BetterStack");
     } catch (loggingError) {
@@ -63,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
           timestamp: new Date().toISOString(),
           ...logPayload,
         });
-        localStorage.setItem("error_logs", JSON.stringify(errors.slice(-10))); // Keep last 10 errors
+        localStorage.setItem("error_logs", JSON.stringify(errors.slice(-10)));
       } catch (storageError) {
         console.error(
           "[ErrorBoundary] Failed to store error in localStorage:",
