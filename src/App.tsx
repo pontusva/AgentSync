@@ -2,6 +2,7 @@ import "./App.css";
 import Dashboard from "@/components/dashboard";
 import { logtail } from "@/logtail/logtail";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { TestError } from "./components/TestError";
 
 function App() {
   logtail.error("Something bad happend.");
@@ -14,11 +15,13 @@ function App() {
   logtail.flush();
 
   return (
-    <div className="container">
-      <ErrorBoundary>
+    <ErrorBoundary>
+      <div className="container">
+        <h1>Error Testing</h1>
+        <TestError />
         <Dashboard />
-      </ErrorBoundary>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
 
