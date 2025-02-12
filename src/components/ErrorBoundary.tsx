@@ -18,9 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Attempting to log error to BetterStack:", error);
-
+  private async sendErrorToLogtail(error: Error, errorInfo: ErrorInfo) {
     const logPayload = {
       dt: new Date().toISOString(),
       source: "ErrorBoundary",
@@ -35,78 +33,60 @@ export class ErrorBoundary extends Component<Props, State> {
       },
     };
 
-    console.error("Error details:", logPayload);
+    // Always log to console as fallback
+    console.error("[ErrorBoundary] Error caught:", logPayload);
 
-    Promise.all([
-      logtail.error("REACT_ERROR_BOUNDARY", logPayload),
-      logtail.flush(),
-    ]).catch((error) => {
-      console.error("Failed to send/flush logs to BetterStack:", error);
-    });
-  }
-
-  componentDidMount() {
-    window.addEventListener("error", this.handleGlobalError);
-    window.addEventListener("unhandledrejection", this.handlePromiseRejection);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener("error", this.handleGlobalError);
-    window.removeEventListener(
-      "unhandledrejection",
-      this.handlePromiseRejection
-    );
-  }
-
-  private handleGlobalError = (event: ErrorEvent) => {
     try {
-      logtail.error("GLOBAL_ERROR", {
-        dt: new Date().toISOString(),
-        source: "ErrorBoundary",
-        type: "global_error",
-        error: {
-          message: event.message,
-          stack: event.error?.stack,
-          name: event.error?.name,
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
-        },
+      // Try to send to BetterStack with timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Logging timeout")), 5000);
       });
-      logtail.flush();
-    } catch (loggingError) {
-      console.error("Failed to log global error to BetterStack:", loggingError);
-      console.error("Original error:", event);
-    }
-  };
 
-  private handlePromiseRejection = (event: PromiseRejectionEvent) => {
-    try {
-      logtail.error("UNHANDLED_PROMISE_REJECTION", {
-        dt: new Date().toISOString(),
-        source: "ErrorBoundary",
-        type: "promise_rejection",
-        error: {
-          message: event.reason?.message || "Unknown promise rejection",
-          stack: event.reason?.stack,
-          name: event.reason?.name,
-        },
-      });
-      logtail.flush();
+      await Promise.race([
+        logtail.error("REACT_ERROR_BOUNDARY", logPayload),
+        timeoutPromise,
+      ]);
+
+      await Promise.race([logtail.flush(), timeoutPromise]);
+
+      console.log("[ErrorBoundary] Successfully sent error to BetterStack");
     } catch (loggingError) {
       console.error(
-        "Failed to log promise rejection to BetterStack:",
+        "[ErrorBoundary] Failed to send to BetterStack:",
         loggingError
       );
-      console.error("Original rejection:", event);
+
+      // Fallback: Send to localStorage
+      try {
+        const errors = JSON.parse(localStorage.getItem("error_logs") || "[]");
+        errors.push({
+          timestamp: new Date().toISOString(),
+          ...logPayload,
+        });
+        localStorage.setItem("error_logs", JSON.stringify(errors.slice(-10))); // Keep last 10 errors
+      } catch (storageError) {
+        console.error(
+          "[ErrorBoundary] Failed to store error in localStorage:",
+          storageError
+        );
+      }
     }
-  };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    this.sendErrorToLogtail(error, errorInfo).catch(console.error); // Final catch-all
+  }
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary">
-          <h1>Sorry.. there was an error</h1>
+        <div className="error-boundary p-4 border border-red-500 rounded">
+          <h1 className="text-xl font-bold text-red-500">
+            Something went wrong
+          </h1>
+          <p className="mt-2">
+            The error has been logged and we'll look into it.
+          </p>
         </div>
       );
     }
