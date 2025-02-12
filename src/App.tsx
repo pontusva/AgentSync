@@ -1,6 +1,7 @@
 import "./App.css";
 import Dashboard from "@/components/dashboard";
 import { logtail } from "@/logtail/logtail";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function App() {
   logtail.error("Something bad happend.");
@@ -8,13 +9,15 @@ function App() {
     item: "Orange Soda",
     price: 100.0,
   });
-  console.log(import.meta.env.VITE_INGESTING_HOST);
+
   // Ensure that all logs are sent to Logtail
   logtail.flush();
 
   return (
     <div className="container">
-      <Dashboard />
+      <ErrorBoundary>
+        <Dashboard />
+      </ErrorBoundary>
     </div>
   );
 }
