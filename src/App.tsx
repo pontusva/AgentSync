@@ -8,7 +8,7 @@ function App() {
     item: "Orange Soda",
     price: 100.0,
   });
-
+  console.log(import.meta.env.VITE_INGESTING_HOST);
   // Ensure that all logs are sent to Logtail
   logtail.flush();
 
