@@ -1,6 +1,7 @@
 // A component that will throw an error for testing purposes
 import { useState } from "react";
 import { useLogging } from "../hooks/useLogging";
+import { logtail } from "@/logtail/logtail";
 
 export const TestError = () => {
   const [shouldThrow, setShouldThrow] = useState(false);
@@ -42,7 +43,18 @@ export const TestError = () => {
       <button onClick={() => setShouldThrow(true)}>
         Throw Component Error
       </button>
-      <button onClick={handleAsyncError}>Throw Async Error</button>
+      <button
+        onClick={() => {
+          logtail.debug("DEBUG", {
+            dt: new Date().toISOString(),
+            source: "App",
+            type: "test_error_2",
+          });
+          logtail.flush();
+        }}
+      >
+        THIS SHOULD WORK
+      </button>
       <button onClick={handleGlobalError}>Throw Global Error</button>
     </div>
   );
