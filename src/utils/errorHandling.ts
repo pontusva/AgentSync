@@ -15,11 +15,13 @@ export function setupGlobalErrorHandlers() {
           }
         : null,
     });
+    logtail.flush();
   };
 
   window.onunhandledrejection = (event) => {
     logtail.error("Unhandled Promise rejection", {
       reason: event.reason,
     });
+    logtail.flush();
   };
 }
