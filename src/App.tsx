@@ -10,6 +10,12 @@ function App() {
     source: "App",
     type: "test_error",
   });
+
+  logtail.debug("DEBUG", {
+    dt: new Date().toISOString(),
+    source: "App",
+    type: "test_error_2",
+  });
   logtail.flush();
   return (
     <ErrorBoundary>
