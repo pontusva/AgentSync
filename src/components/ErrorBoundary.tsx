@@ -21,36 +21,28 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Attempting to log error to BetterStack:", error);
 
-    try {
-      logtail.error("REACT_ERROR_BOUNDARY", {
-        dt: new Date().toISOString(),
-        source: "ErrorBoundary",
-        type: "component_error",
-        error: {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        },
-        errorInfo: {
-          componentStack: errorInfo.componentStack,
-        },
-      });
+    const logPayload = {
+      dt: new Date().toISOString(),
+      source: "ErrorBoundary",
+      type: "component_error",
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      },
+      errorInfo: {
+        componentStack: errorInfo.componentStack,
+      },
+    };
 
-      // Immediate flush to ensure delivery
-      logtail.flush().catch((flushError) => {
-        console.error("Failed to flush logs to BetterStack:", flushError);
-        console.error("Original error:", {
-          error,
-          errorInfo,
-        });
-      });
-    } catch (loggingError) {
-      console.error("Failed to log to BetterStack:", loggingError);
-      console.error("Original error:", {
-        error,
-        errorInfo,
-      });
-    }
+    console.error("Error details:", logPayload);
+
+    Promise.all([
+      logtail.error("REACT_ERROR_BOUNDARY", logPayload),
+      logtail.flush(),
+    ]).catch((error) => {
+      console.error("Failed to send/flush logs to BetterStack:", error);
+    });
   }
 
   componentDidMount() {
