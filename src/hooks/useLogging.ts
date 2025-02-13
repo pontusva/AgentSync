@@ -2,6 +2,15 @@ import { useCallback } from "react";
 import { logtail } from "../logtail/logtail";
 
 export const useLogging = () => {
+  // Create reusable timeout promise
+  const createTimeoutPromise = (ms: number = 5000) => {
+    let timeoutId: NodeJS.Timeout;
+    const promise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error("Logging timeout")), ms);
+    });
+    return { promise, timeoutId };
+  };
+
   const logError = useCallback(
     async (error: Error, context?: Record<string, any>) => {
       const logPayload = {
@@ -16,21 +25,22 @@ export const useLogging = () => {
       };
 
       try {
-        // Add timeout protection
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Logging timeout")), 5000);
-        });
+        const { promise: timeoutPromise, timeoutId } = createTimeoutPromise();
 
-        // Send log with timeout
-        await Promise.race([
-          logtail.error("REACT_APP_ERROR", logPayload),
-          timeoutPromise,
-        ]);
+        try {
+          // Send log with timeout
+          await Promise.race([
+            logtail.error("REACT_APP_ERROR", logPayload),
+            timeoutPromise,
+          ]);
 
-        // Ensure flush completes
-        await Promise.race([logtail.flush(), timeoutPromise]);
+          // Ensure flush completes
+          await Promise.race([logtail.flush(), timeoutPromise]);
 
-        console.log("[Logging] Successfully sent error to BetterStack");
+          console.log("[Logging] Successfully sent error to BetterStack");
+        } finally {
+          clearTimeout(timeoutId);
+        }
       } catch (loggingError) {
         console.error("[Logging] Failed to send to BetterStack:", loggingError);
         // Store in localStorage as backup
@@ -62,9 +72,7 @@ export const useLogging = () => {
       };
 
       try {
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Logging timeout")), 5000);
-        });
+        const { promise: timeoutPromise, timeoutId } = createTimeoutPromise();
 
         await Promise.race([logtail.info(message, logPayload), timeoutPromise]);
 

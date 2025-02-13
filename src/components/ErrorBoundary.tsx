@@ -34,29 +34,25 @@ export class ErrorBoundary extends Component<Props, State> {
     };
 
     try {
-      // Try to send to BetterStack with timeout
+      // Log the payload for debugging
+      console.log("[ErrorBoundary] Attempting to send error:", logPayload);
+
+      // Send to BetterStack with timeout
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Logging timeout")), 5000);
       });
 
-      // First, try to send the error
+      // Send the error and wait for confirmation
       await Promise.race([
-        logtail.error("REACT_COMPONENT_ERROR", logPayload),
-        timeoutPromise,
-      ]);
-
-      // Then, ensure it's flushed immediately
-      await Promise.race([
-        new Promise((resolve) => {
-          logtail.flush().then(() => {
-            console.log("[ErrorBoundary] Successfully flushed to BetterStack");
-            resolve(true);
-          });
+        logtail.error("REACT_COMPONENT_ERROR", logPayload).then(() => {
+          console.log("[ErrorBoundary] Initial log sent");
         }),
         timeoutPromise,
       ]);
 
-      console.log("[ErrorBoundary] Successfully sent error to BetterStack");
+      // Explicitly flush and wait for confirmation
+      await logtail.flush();
+      console.log("[ErrorBoundary] Successfully flushed to BetterStack");
     } catch (loggingError) {
       console.error(
         "[ErrorBoundary] Failed to send to BetterStack:",

@@ -1,7 +1,10 @@
 import { Logtail } from "@logtail/browser";
 
-export const logtail = new Logtail("BCfp6fLZELzGDafN2QrBK36p", {
-  endpoint: "https://in.logtail.com",
-  batchSize: 1, // Send logs immediately
-  batchInterval: 0, // Don't wait to send logs
+// Note: Logging might be blocked by privacy-focused browsers (like Brave) or ad blockers
+// If logs aren't appearing, users may need to:
+// 1. Use a different browser
+// 2. Add an exception for in.logs.betterstack.com in their ad blocker
+// 3. Or disable shields in Brave
+export const logtail = new Logtail("gTBFyWyEVfuTbw2hLqTyvkDq", {
+  endpoint: "https://in.logs.betterstack.com",
 });
