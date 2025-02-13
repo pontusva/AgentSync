@@ -1,5 +1,4 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-import { logtail } from "../logtail/logtail";
 
 interface Props {
   children: ReactNode;
@@ -37,29 +36,26 @@ export class ErrorBoundary extends Component<Props, State> {
       // Log the payload for debugging
       console.log("[ErrorBoundary] Attempting to send error:", logPayload);
 
-      // Send to BetterStack with timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Logging timeout")), 5000);
+      // Send to backend API
+      const response = await fetch("http://localhost:8080/api/logs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(logPayload),
       });
 
-      // Send the error and wait for confirmation
-      await Promise.race([
-        logtail.error("REACT_COMPONENT_ERROR", logPayload).then(() => {
-          console.log("[ErrorBoundary] Initial log sent");
-        }),
-        timeoutPromise,
-      ]);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      // Explicitly flush and wait for confirmation
-      await logtail.flush();
-      console.log("[ErrorBoundary] Successfully flushed to BetterStack");
+      console.log("[ErrorBoundary] Successfully sent error to backend");
     } catch (loggingError) {
       console.error(
-        "[ErrorBoundary] Failed to send to BetterStack:",
+        "[ErrorBoundary] Failed to send to proxy server:",
         loggingError
       );
 
-      // Fallback: Send to localStorage
       try {
         const errors = JSON.parse(localStorage.getItem("error_logs") || "[]");
         errors.push({
