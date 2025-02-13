@@ -8,3 +8,5 @@ import { Logtail } from "@logtail/browser";
 export const logtail = new Logtail("gTBFyWyEVfuTbw2hLqTyvkDq", {
   endpoint: "https://in.logs.betterstack.com",
 });
+
+console.log("logtail", logtail);
